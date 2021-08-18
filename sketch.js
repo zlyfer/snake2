@@ -21,24 +21,22 @@ var settings = {
 
 var snake;
 var foods = [];
-var assets = {
-  apple: null,
-  mango: null,
-  lime: null,
-  grapes: null,
-};
+var pickupList = ["apple", "mango", "lime", "grapes"];
+var pickups = {};
 
 function preload() {
-  assets.apple = loadImage("./assets/apple.png");
-  assets.mango = loadImage("./assets/mango.png");
-  assets.lime = loadImage("./assets/lime.png");
-  assets.grapes = loadImage("./assets/grapes.png");
+  pickupList.forEach((pickup) => {
+    pickups[pickup] = {};
+    pickups[pickup].image = loadImage(`./assets/pickups/${pickup}.png`);
+  });
 }
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+  pickupList.forEach((pickup) => {
+    pickups[pickup].color = generateImageAverageColor(pickups[pickup].image);
+  });
   snake = new Snake(width / 2, height / 2);
-  // for (let i = 0; i < 300; i++)
   addFood();
 }
 
@@ -68,20 +66,6 @@ function draw() {
   detectControls();
 }
 
-function addFood() {
-  foods.push(new Food(random(25, width - 25), random(25, height - 25)));
-}
-
-function showFPS() {
-  push();
-  textSize(12);
-  fill(255);
-  text("FPS: " + round(frameRate()), 10, 20);
-  // text("Body Parts " + snake.body.length, 10, 35);
-  // text("Positions " + snake.positions.length, 10, 50);
-  pop();
-}
-
 function keyPressed() {
   if (keyCode === 32) {
     // snake.addSegment();
@@ -92,4 +76,38 @@ function keyPressed() {
 function detectControls() {
   if (keyIsDown(LEFT_ARROW) || (mouseIsPressed && mouseButton === LEFT)) snake.changeDir("left");
   if (keyIsDown(RIGHT_ARROW) || (mouseIsPressed && mouseButton === RIGHT)) snake.changeDir("right");
+}
+
+function addFood() {
+  foods.push(new Food(random(25, width - 25), random(25, height - 25)));
+}
+
+function showFPS() {
+  push();
+  textSize(12);
+  fill(255);
+  text("FPS: " + round(frameRate()), 10, 20);
+  text("Body Parts " + snake.body.length, 10, 35);
+  text("Positions " + snake.positions.length, 10, 50);
+  pop();
+}
+
+function generateImageAverageColor(image) {
+  let xMax = round(image.width * 0.1);
+  let yMax = round(image.height * 0.1);
+  let halfWidth = round(image.width / 2);
+  let halfHeight = round(image.height / 2);
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  for (let x = halfWidth - xMax; x < halfWidth + xMax; x++) {
+    for (let y = halfHeight - yMax; y < halfHeight + yMax; y++) {
+      let pixel = image.get(x, y);
+      r = pixel[0];
+      g = pixel[1];
+      b = pixel[2];
+    }
+  }
+
+  return [r, g, b];
 }
