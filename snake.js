@@ -15,17 +15,22 @@ class Snake {
     this.size = 35;
     this.bodyFade = { dir: 0, value: 0 };
   }
+
   update() {
     this.changeDir();
-    this.pulsateBody();
-    this.drawBody();
-    this.draw();
+    if (settings.pulsateBody.value) this.pulsateBody();
+    this.showDeadBodies();
+    this.show();
     this.move();
     this.moveBody();
-    this.showDeadBodies();
     this.detectSelfBite();
     // this.detectDeadBodyBite();
     this.applySpeed();
+  }
+
+  show() {
+    this.drawBody();
+    this.draw();
   }
 
   checkEat(food) {
@@ -57,9 +62,6 @@ class Snake {
 
   attachSegment(type) {
     let index = this.positions.length - this.size * this.offset * (this.body.length + 1);
-    // for (let i = 0; i < this.body.length; i++) {
-    // this.body[i].fade = 255;
-    // }
     this.body.push({
       pos: this.positions[index],
       order: this.body.length + 1,
@@ -99,18 +101,19 @@ class Snake {
   }
 
   drawBody() {
-    for (let i = 0; i < this.body.length; i++) {
-      let bodyPart = this.body[i];
-      push();
-      noFill();
-      stroke([...pickups[bodyPart.type].color, bodyPart.fade]);
-      beginShape();
-      strokeWeight(this.getBodySize(bodyPart.stack) / 2);
-      if (i == 0) vertex(this.pos.x, this.pos.y);
-      else vertex(this.body[i - 1].pos.x, this.body[i - 1].pos.y);
-      vertex(bodyPart.pos.x, bodyPart.pos.y);
-      endShape();
-    }
+    if (settings.bodyLink.value)
+      for (let i = 0; i < this.body.length; i++) {
+        let bodyPart = this.body[i];
+        push();
+        noFill();
+        stroke([...pickups[bodyPart.type].color, bodyPart.fade]);
+        beginShape();
+        strokeWeight(this.getBodySize(bodyPart.stack) / 2);
+        if (i == 0) vertex(this.pos.x, this.pos.y);
+        else vertex(this.body[i - 1].pos.x, this.body[i - 1].pos.y);
+        vertex(bodyPart.pos.x, bodyPart.pos.y);
+        endShape();
+      }
 
     for (let i = 0; i < this.body.length; i++) {
       let bodyPart = this.body[i];
@@ -192,14 +195,16 @@ class Snake {
       let fade = map(this.deadBodies[i].timer, 0, 400, 200, 100);
 
       // Link zwischen Körpern:
-      noFill();
-      stroke(255, fade);
-      for (let j = 0; j < this.deadBodies[i].bodies.length - 1; j++) {
-        strokeWeight(this.getBodySize(this.deadBodies[i].bodies[j].stack) / 2);
-        beginShape();
-        vertex(this.deadBodies[i].bodies[j].pos.x, this.deadBodies[i].bodies[j].pos.y);
-        vertex(this.deadBodies[i].bodies[j + 1].pos.x, this.deadBodies[i].bodies[j + 1].pos.y);
-        endShape();
+      if (settings.bodyLink.value) {
+        noFill();
+        stroke(255, fade);
+        for (let j = 0; j < this.deadBodies[i].bodies.length - 1; j++) {
+          strokeWeight(this.getBodySize(this.deadBodies[i].bodies[j].stack) / 2);
+          beginShape();
+          vertex(this.deadBodies[i].bodies[j].pos.x, this.deadBodies[i].bodies[j].pos.y);
+          vertex(this.deadBodies[i].bodies[j + 1].pos.x, this.deadBodies[i].bodies[j + 1].pos.y);
+          endShape();
+        }
       }
 
       // Körper:
