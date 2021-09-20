@@ -71,7 +71,7 @@ var settings = {
 };
 
 // 0 = running, 1 = start, 2 = pause
-var gameState = 0;
+var gameState = 1;
 // 0 = none, 1 = start/exit button
 // NONE = 0, START = 1, END = 2, RESUME = 3
 var buttonHover = 0;
