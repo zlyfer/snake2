@@ -124,7 +124,6 @@ function draw() {
   frameRate(120);
   background(22);
   updateUpdates();
-  if (debug) showDebug();
   if (gameState == 0) {
     buttonHover = 0;
     gameRun();
@@ -134,6 +133,7 @@ function draw() {
   } else if (gameState == 2) {
     gamePause();
   }
+  if (debug) showDebug();
 }
 
 function updateUpdates() {
