@@ -4,12 +4,30 @@ var settings = {
   bodyLink: {
     id: "bodyLink",
     label: "Körperverbindungen",
-    value: true,
+    value: false,
     type: "boolean",
   },
   pulsateBody: {
     id: "pulsateBody",
     label: "Körper Pulsieren",
+    value: false,
+    type: "boolean",
+  },
+  eatBody: {
+    id: "eatBody",
+    label: "Körper Abbeißen",
+    value: true,
+    type: "boolean",
+  },
+  wallHit: {
+    id: "wallHit",
+    label: "Wände",
+    value: true,
+    type: "boolean",
+  },
+  magnet: {
+    id: "magnet",
+    label: "Erzimodus (Magnet)",
     value: false,
     type: "boolean",
   },
@@ -20,7 +38,7 @@ var settings = {
     type: "select",
     options: [
       {
-        label: "Direkt Anhängen",
+        label: "Anhängen",
         value: "attach",
       },
       {
@@ -29,6 +47,11 @@ var settings = {
       },
     ],
   },
+};
+
+var updates = {
+  updateFlag: 0,
+  fps: 0,
 };
 
 // 0 = running, 1 = start, 2 = pause
@@ -40,8 +63,11 @@ var snake;
 var foods = [];
 var pickupList = ["apple", "mango", "lime", "grapes"];
 var pickups = {};
+var highscore = 0;
+var logoImage;
 
 function preload() {
+  logoImage = loadImage("./assets/logo.png");
   pickupList.forEach((pickup) => {
     pickups[pickup] = {};
     pickups[pickup].image = loadImage(`./assets/pickups/${pickup}.png`);
@@ -73,9 +99,11 @@ function initGame() {
 function draw() {
   frameRate(120);
   background(22);
+  updateUpdates();
   if (gameState == 0) {
     buttonHover = 0;
     gameRun();
+    showUI();
     showInfo();
   } else if (gameState == 1) {
     gameMenu();
@@ -84,18 +112,26 @@ function draw() {
   }
 }
 
+function updateUpdates() {
+  if (updates.updateFlag < frameCount - 15) {
+    updates.updateFlag = frameCount;
+    updates.fps = round(frameRate());
+  }
+}
+
 function gameMenu() {
   showOverlay();
   showSettings();
-  addButton("Spiel Starten", width / 2, height / 2 - 20, 1);
+  addButton("Spiel Starten", width / 2, height * 0.48, 1);
   showControls();
   push();
-  stroke(255);
+  textAlign(CENTER);
   fill(255);
-  textSize(50);
-  text("Snake", width / 2 - 70, 100);
-  textSize(40);
-  text("von Frederik Shull", width / 2 - 160, 150);
+  textSize(height * 0.07);
+  text("Snake", width * 0.54, height * 0.135);
+  textSize(height * 0.04);
+  text("von Frederik Shull", width / 2, height * 0.23);
+  image(logoImage, width * 0.405, height * 0.04, height * 0.15, height * 0.15);
   pop();
 }
 
@@ -105,24 +141,30 @@ function gamePause() {
     foods[i].show();
   }
   showOverlay();
-  addButton("Spiel Fortsetzen", width / 2, height / 2 - 75, 3);
-  addButton("Spiel Beenden", width / 2, height / 2 + 25, 2);
+  addButton("Spiel Fortsetzen", width / 2, height * 0.42, 3);
+  addButton("Spiel Beenden", width / 2, height * 0.55, 2);
   showControls();
   push();
-  textSize(50);
   stroke(255);
   fill(255);
-  text("PAUSE", width / 2 - 82, 100);
+  textAlign(CENTER);
+  textSize(height * 0.07);
+  text("PAUSE", width / 2, height * 0.1);
   pop();
 }
 
 function gameRun() {
+  if (random() < 0.001 && foods.length < 8) addFood();
   snake.update();
   let eaten = [];
   for (let i = 0; i < foods.length; i++) {
     let food = foods[i];
     food.update();
-    if (snake.checkEat(food)) eaten.push(i);
+    if (settings.magnet.value) snake.attractFood(food);
+    if (snake.checkEat(food)) {
+      if (highscore < snake.body.length) highscore = snake.body.length;
+      eaten.push(i);
+    }
   }
   eaten.forEach((e) => {
     addFood();
@@ -139,54 +181,79 @@ function showOverlay() {
 }
 
 function showSettings() {
-  let x = 50;
-  let y = 250;
-  let w = 500;
-  let h = 550;
+  let x = width * 0.015;
+  let y = height * 0.25;
+  let w = width * 0.27;
+  let h = height * 0.6;
   addBox("Einstellungen", x, y, w, h);
   push();
   noStroke();
-  textSize(20);
+  textSize(h * 0.04);
   Object.keys(settings).forEach((id, index) => {
     let setting = settings[id];
-    let sy = index * 40 + y + 135;
+    let sy = index * (h * 0.08) + y + height * 0.15;
     if (index % 2 == 0) fill(0, 25);
     else fill(0, 50);
-    rect(x + 1, sy - 27, w - 2, 40);
+    rect(x + width * 0.001, sy - h * 0.045, w - width * 0.001 * 2, height * 0.048);
     fill(255);
     textAlign(LEFT);
-    text(setting.label + ":", x + 25, sy);
+    text(setting.label + ":", x * 1.5, sy + height * 0.005);
     textAlign(CENTER);
+    let yb = sy - h * 0.043;
+    let hb = height * 0.045;
     if (setting.type == "boolean") {
-      let _text = setting.value ? "An" : "Aus";
-      text(_text, w + x - 40, sy);
-      if (detectMouseHitbox(w + x - 70, sy - 23, 60, 34)) {
-        fill(255, 100);
+      let wb = (w - width * 0.001 * 2) * 0.11;
+      let xb = x * 0.6 + w - wb;
+      if (detectMouseHitbox(xb, yb, wb, hb)) {
+        fill((setting.value ? "#4caf50" : "#f44336") + "ee");
         buttonHover = () => {
           setting.value = !setting.value;
         };
       } else {
+        fill((setting.value ? "#4caf50" : "#f44336") + "aa");
+      }
+      rect(xb, yb, wb, hb);
+      let _text = setting.value ? "An" : "Aus";
+      noStroke();
+      fill(255);
+      text(_text, xb + wb * 0.5, yb + hb * 0.7);
+    } else if (setting.type == "select") {
+      let option = setting.options.find((o) => o.value == setting.value);
+      let index = setting.options.indexOf(option);
+      let wb = textWidth(setting.options[index].label) * 1.2;
+      let xb = x * 0.6 + w - wb;
+      if (detectMouseHitbox(xb, yb, wb, hb)) {
+        fill(255, 100);
+        buttonHover = () => {
+          if (index < setting.options.length - 1) {
+            setting.value = setting.options[index + 1].value;
+          } else {
+            setting.value = setting.options[0].value;
+          }
+        };
+      } else {
         fill(255, 50);
       }
-      rect(w + x - 70, sy - 23, 60, 34);
+      rect(xb, yb, wb, hb);
+      noStroke();
+      fill(255);
+      text(option.label, xb + wb * 0.5, yb + hb * 0.7);
     }
   });
   pop();
 }
 
 function showControls() {
-  addBox("Steuerung", width - 550, 400, 500, 200);
+  addBox("Steuerung", width * 0.71, height * 0.45, width * 0.27, height * 0.2);
   push();
-  translate(0, 125);
   fill(255);
-  textSize(25);
-  noStroke();
+  textSize(width * 0.013);
   textAlign(LEFT);
-  text("Pause", width - 530, 400);
-  text("Lenken", width - 530, 440);
+  text("Pause", width * 0.724, height * 0.58);
+  text("Lenken", width * 0.724, height * 0.615);
   textAlign(RIGHT);
-  text("Escape", width - 70, 400);
-  text("Pfeiltasten / Maustasten", width - 70, 440);
+  text("Escape", width * 0.724 + width * 0.24, height * 0.58);
+  text("Pfeiltasten / Maustasten", width * 0.724 + width * 0.24, height * 0.615);
   pop();
 }
 
@@ -194,20 +261,23 @@ function addBox(title, x, y, w, h) {
   push();
   stroke(255, 150);
   fill(50, 125);
+  strokeWeight(width * 0.001);
   rect(x, y, w, h);
-  stroke(255);
+  noStroke();
   fill(255);
-  textSize(35);
+  textSize(w * 0.07);
   textAlign(CENTER);
-  text(title, x + w / 2, y + 50);
+  text(title, x + w / 2, y + w * 0.09);
   pop();
 }
 
 function addButton(_text, x, y, _buttonHover) {
-  let w = 200;
-  let h = 80;
+  let h = height * 0.1;
+  textSize(h * 0.35);
+  let w = textWidth("----------------------") * 1.2;
   x = x - w / 2;
   push();
+  strokeWeight(width * 0.001);
   if (detectMouseHitbox(x, y, w, h)) {
     buttonHover = _buttonHover;
     stroke(255, 0, 0, 150);
@@ -220,9 +290,8 @@ function addButton(_text, x, y, _buttonHover) {
   rect(x, y, w, h);
   noStroke();
   fill(255);
-  textSize(20);
   textAlign(CENTER);
-  text(_text, x + 100, y + 40 + 6);
+  text(_text, x + w / 2, y + h / 2 + (w * 0.1) / 2.5);
   pop();
 }
 
@@ -262,31 +331,30 @@ function addFood() {
   foods.push(new Food(random(25, width - 25), random(25, height - 25)));
 }
 
+function showUI() {
+  push();
+  textAlign(RIGHT);
+  fill(255);
+  noStroke();
+  textSize(width * 0.01);
+  text(`Highscore: ${highscore}`, width - width * 0.01, height * 0.04);
+  text(`Score: ${snake.body.length}`, width - width * 0.01, height * 0.07);
+  pop();
+}
+
 function showInfo() {
   push();
-  textSize(12);
+  textSize(width * 0.008);
   fill(255);
-  text("FPS: " + round(frameRate()), 10, 20);
-  text("Body Parts: " + snake.body.length, 10, 35);
-  text("Positions: " + snake.positions.length, 10, 50);
+  text("FPS: " + updates.fps, width * 0.005, height * 0.03);
+  // text("Body Parts: " + snake.body.length, width * 0.005, height * 0.05);
+  // text("Positions: " + snake.positions.length, width * 0.005, height * 0.07);
   pop();
 }
 
 function generateImageAverageColor(image) {
-  let xMax = round(image.width * 0.1);
-  let yMax = round(image.height * 0.1);
   let halfWidth = round(image.width / 2);
   let halfHeight = round(image.height / 2);
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  for (let x = halfWidth - xMax; x < halfWidth + xMax; x++) {
-    for (let y = halfHeight - yMax; y < halfHeight + yMax; y++) {
-      let pixel = image.get(x, y);
-      r = pixel[0];
-      g = pixel[1];
-      b = pixel[2];
-    }
-  }
-  return [r, g, b];
+  let pixel = image.get(halfWidth, halfHeight);
+  return [pixel[0], pixel[1], pixel[2]];
 }

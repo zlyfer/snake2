@@ -5,11 +5,9 @@ class Snake {
     this.speedModifier = 2;
     this.pos = createVector(x, y);
     this.dir = createVector(1, 0);
-    // Körper und Positionen:
     this.body = [];
     this.deadBodies = [];
     this.positions = [];
-    // Konstanten:
     this.speed = 1;
     this.offset = 1.2;
     this.size = 35;
@@ -23,7 +21,7 @@ class Snake {
     this.show();
     this.move();
     this.moveBody();
-    this.detectSelfBite();
+    if (settings.eatBody.value) this.detectSelfBite();
     // this.detectDeadBodyBite();
     this.applySpeed();
   }
@@ -31,6 +29,13 @@ class Snake {
   show() {
     this.drawBody();
     this.draw();
+  }
+
+  attractFood(food) {
+    let distance = dist(this.pos.x, this.pos.y, food.pos.x, food.pos.y);
+    if (distance < 200) {
+      food.pos = p5.Vector.lerp(food.pos, this.pos, 0.005);
+    }
   }
 
   checkEat(food) {
@@ -127,7 +132,7 @@ class Snake {
   }
 
   move() {
-    for (let i = 0; i < this.speedModifier; i++) {
+    if (settings.wallHit.value) {
       if (this.pos.x < 0 || this.pos.x > width) {
         this.pos.x = this.pos.x > width ? width : 0;
         this.dir.x = -this.dir.x;
@@ -138,6 +143,21 @@ class Snake {
         this.dir.y = -this.dir.y;
         this.killBody(0);
       }
+    } else {
+      if (this.pos.x < 0) {
+        this.pos.x = width;
+      }
+      if (this.pos.x > width) {
+        this.pos.x = 0;
+      }
+      if (this.pos.y < 0) {
+        this.pos.y = height;
+      }
+      if (this.pos.y > height) {
+        this.pos.y = 0;
+      }
+    }
+    for (let i = 0; i < this.speedModifier; i++) {
       this.positions.push(this.pos.copy());
       if (this.positions.length > 100000) this.positions.shift();
       this.pos.add(this.dir);
@@ -194,7 +214,6 @@ class Snake {
     for (let i = 0; i < this.deadBodies.length; i++) {
       let fade = map(this.deadBodies[i].timer, 0, 400, 200, 100);
 
-      // Link zwischen Körpern:
       if (settings.bodyLink.value) {
         noFill();
         stroke(255, fade);
@@ -207,7 +226,6 @@ class Snake {
         }
       }
 
-      // Körper:
       noStroke();
       fill(fade);
       for (let j = 0; j < this.deadBodies[i].bodies.length; j++) {
@@ -218,7 +236,6 @@ class Snake {
         );
       }
 
-      // Tote Körper löschen:
       this.deadBodies[i].timer++;
       if (this.deadBodies[i].timer > 400) this.deadBodies.splice(i, 1);
     }
