@@ -2,16 +2,15 @@
 
 class Snake {
   constructor(x, y) {
-    this.speedModifier = 2;
     this.pos = createVector(x, y);
-    this.dir = createVector(1, 0);
+    this.dir = createVector(1, 0).rotate(radians(random() * 360));
     this.body = [];
     this.deadBodies = [];
     this.positions = [];
-    this.speed = 1;
     this.offset = 1.2;
     this.size = 35;
     this.bodyFade = { dir: 0, value: 0 };
+    this.speedModifier = 1;
   }
 
   update() {
@@ -102,23 +101,29 @@ class Snake {
     noStroke();
     fill("#689f38");
     circle(this.pos.x, this.pos.y, this.size);
+    stroke(255);
     pop();
   }
 
   drawBody() {
-    if (settings.bodyLink.value)
+    if (settings.bodyLink.value == "always")
       for (let i = 0; i < this.body.length; i++) {
-        let bodyPart = this.body[i];
-        push();
-        noFill();
-        stroke([...pickups[bodyPart.type].color, bodyPart.fade]);
-        beginShape();
-        strokeWeight(this.getBodySize(bodyPart.stack) / 2);
-        if (i == 0) vertex(this.pos.x, this.pos.y);
-        else vertex(this.body[i - 1].pos.x, this.body[i - 1].pos.y);
-        vertex(bodyPart.pos.x, bodyPart.pos.y);
-        endShape();
+        let bodyPart1 = this.body[i];
+        let bodyPart2 = this;
+        if (i != 0) bodyPart2 = this.body[i - 1];
+        this.drawBodyLink(bodyPart1, bodyPart2);
       }
+    if (settings.bodyLink.value == "same") {
+      if (this.body.length > 1) {
+        let type = this.body[0].type;
+        this.body.forEach((bodyPart, i) => {
+          if (bodyPart.type == type) {
+            if (i != 0) this.drawBodyLink(bodyPart, this.body[i - 1]);
+          }
+          type = bodyPart.type;
+        });
+      }
+    }
 
     for (let i = 0; i < this.body.length; i++) {
       let bodyPart = this.body[i];
@@ -131,7 +136,23 @@ class Snake {
     }
   }
 
+  drawBodyLink(bodyPart1, bodyPart2) {
+    if (bodyPart1.pos.dist(bodyPart2.pos) < this.size * 2) {
+      push();
+      noFill();
+      stroke([...pickups[bodyPart1.type].color, bodyPart1.fade]);
+      beginShape();
+      strokeWeight(this.getBodySize(bodyPart1.stack) / 2);
+      vertex(bodyPart1.pos.x, bodyPart1.pos.y);
+      vertex(bodyPart2.pos.x, bodyPart2.pos.y);
+      endShape();
+    }
+  }
+
   move() {
+    if (settings.hardcore.value && !settings.wallHit.value)
+      if (this.pos.x < 0 || this.pos.x > width || this.pos.y < 0 || this.pos.y > height) gameState = 1;
+
     if (settings.wallHit.value) {
       if (this.pos.x < 0 || this.pos.x > width) {
         this.pos.x = this.pos.x > width ? width : 0;
@@ -214,15 +235,22 @@ class Snake {
     for (let i = 0; i < this.deadBodies.length; i++) {
       let fade = map(this.deadBodies[i].timer, 0, 400, 200, 100);
 
-      if (settings.bodyLink.value) {
+      if (settings.bodyLink.value != "never") {
         noFill();
         stroke(255, fade);
         for (let j = 0; j < this.deadBodies[i].bodies.length - 1; j++) {
           strokeWeight(this.getBodySize(this.deadBodies[i].bodies[j].stack) / 2);
-          beginShape();
-          vertex(this.deadBodies[i].bodies[j].pos.x, this.deadBodies[i].bodies[j].pos.y);
-          vertex(this.deadBodies[i].bodies[j + 1].pos.x, this.deadBodies[i].bodies[j + 1].pos.y);
-          endShape();
+          if (
+            this.deadBodies[i].bodies[j].pos.dist(this.deadBodies[i].bodies[j + 1].pos) < this.size * 2 &&
+            (settings.bodyLink.value == "always" ||
+              (settings.bodyLink.value == "same" &&
+                this.deadBodies[i].bodies[j].type == this.deadBodies[i].bodies[j + 1].type))
+          ) {
+            beginShape();
+            vertex(this.deadBodies[i].bodies[j].pos.x, this.deadBodies[i].bodies[j].pos.y);
+            vertex(this.deadBodies[i].bodies[j + 1].pos.x, this.deadBodies[i].bodies[j + 1].pos.y);
+            endShape();
+          }
         }
       }
 

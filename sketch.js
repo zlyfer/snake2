@@ -1,33 +1,9 @@
 // jshint esversion: 9
 
 var settings = {
-  bodyLink: {
-    id: "bodyLink",
-    label: "Körperverbindungen",
-    value: false,
-    type: "boolean",
-  },
-  pulsateBody: {
-    id: "pulsateBody",
-    label: "Körper Pulsieren",
-    value: false,
-    type: "boolean",
-  },
-  eatBody: {
-    id: "eatBody",
-    label: "Körper Abbeißen",
-    value: true,
-    type: "boolean",
-  },
-  wallHit: {
-    id: "wallHit",
-    label: "Wände",
-    value: true,
-    type: "boolean",
-  },
-  magnet: {
-    id: "magnet",
-    label: "Erzimodus (Magnet)",
+  hardcore: {
+    id: "hardcore",
+    label: "Hardcore",
     value: false,
     type: "boolean",
   },
@@ -47,15 +23,55 @@ var settings = {
       },
     ],
   },
-};
+  magnet: {
+    id: "magnet",
+    label: "Erzimodus (Magnet)",
+    value: false,
+    type: "boolean",
+  },
+  eatBody: {
+    id: "eatBody",
+    label: "Körper Abbeißen",
+    value: true,
+    type: "boolean",
+  },
+  wallHit: {
+    id: "wallHit",
+    label: "Wände",
+    value: true,
+    type: "boolean",
+  },
 
-var updates = {
-  updateFlag: 0,
-  fps: 0,
+  pulsateBody: {
+    id: "pulsateBody",
+    label: "Körper Pulsieren",
+    value: false,
+    type: "boolean",
+  },
+  bodyLink: {
+    id: "bodyLink",
+    label: "Körperverbindungen",
+    value: "never",
+    type: "select",
+    options: [
+      {
+        label: "Immer",
+        value: "always",
+      },
+      {
+        label: "Gleiche Farbe",
+        value: "same",
+      },
+      {
+        label: "Niemals",
+        value: "never",
+      },
+    ],
+  },
 };
 
 // 0 = running, 1 = start, 2 = pause
-var gameState = 1;
+var gameState = 0;
 // 0 = none, 1 = start/exit button
 // NONE = 0, START = 1, END = 2, RESUME = 3
 var buttonHover = 0;
@@ -65,6 +81,14 @@ var pickupList = ["apple", "mango", "lime", "grapes"];
 var pickups = {};
 var highscore = 0;
 var logoImage;
+
+var updates = {
+  updateFlag: 0,
+  fps: 0,
+};
+let fpsList = [];
+let maxFPS = 0;
+var debug = false;
 
 function preload() {
   logoImage = loadImage("./assets/logo.png");
@@ -100,11 +124,11 @@ function draw() {
   frameRate(120);
   background(22);
   updateUpdates();
+  if (debug) showDebug();
   if (gameState == 0) {
     buttonHover = 0;
     gameRun();
     showUI();
-    showInfo();
   } else if (gameState == 1) {
     gameMenu();
   } else if (gameState == 2) {
@@ -157,15 +181,14 @@ function gameRun() {
   if (random() < 0.001 && foods.length < 8) addFood();
   snake.update();
   let eaten = [];
-  for (let i = 0; i < foods.length; i++) {
-    let food = foods[i];
+  foods.forEach((food, i) => {
     food.update();
     if (settings.magnet.value) snake.attractFood(food);
     if (snake.checkEat(food)) {
       if (highscore < snake.body.length) highscore = snake.body.length;
       eaten.push(i);
     }
-  }
+  });
   eaten.forEach((e) => {
     addFood();
     foods.splice(e, 1);
@@ -311,11 +334,14 @@ function mouseClicked() {
 }
 
 function keyPressed() {
+  console.log(keyCode);
   if (keyCode === 27 && gameState != 1) {
     gameState = gameState == 0 ? 2 : 0;
-  } else if (keyCode === 32) {
-    addFood();
   }
+  if (debug) {
+    if (keyCode === 32) addFood();
+  }
+  if (keyCode === 189) debug = !debug;
 }
 
 function detectControls() {
@@ -342,13 +368,28 @@ function showUI() {
   pop();
 }
 
-function showInfo() {
+function showDebug() {
+  let graphHeight = height * 0.22;
+  fpsList.push(updates.fps);
+  if (fpsList.length > 200) fpsList.shift();
+  if (updates.fps > maxFPS) maxFPS = updates.fps;
   push();
   textSize(width * 0.008);
   fill(255);
   text("FPS: " + updates.fps, width * 0.005, height * 0.03);
-  // text("Body Parts: " + snake.body.length, width * 0.005, height * 0.05);
-  // text("Positions: " + snake.positions.length, width * 0.005, height * 0.07);
+  text("Body Parts: " + snake.body.length, width * 0.005, height * 0.05);
+  text("Positions: " + snake.positions.length, width * 0.005, height * 0.07);
+  stroke(255);
+  noFill();
+  strokeWeight(2);
+  line(0, graphHeight, 200, graphHeight);
+  strokeWeight(1);
+  line(0, graphHeight - maxFPS / 2, 200, graphHeight - maxFPS / 2);
+  beginShape();
+  fpsList.forEach((fps, i) => {
+    vertex(i, graphHeight - fps / 2);
+  });
+  endShape();
   pop();
 }
 
