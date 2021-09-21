@@ -82,7 +82,7 @@ var settings = {
   bodyLink: {
     id: "bodyLink",
     label: "Körperverbindungen",
-    value: "never",
+    value: "same",
     type: "select",
     options: [
       {
