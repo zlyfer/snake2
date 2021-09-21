@@ -164,6 +164,7 @@ class Snake {
       vertex(bodyPart1.pos.x, bodyPart1.pos.y);
       vertex(bodyPart2.pos.x, bodyPart2.pos.y);
       endShape();
+      pop();
     }
   }
 

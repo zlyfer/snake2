@@ -435,9 +435,9 @@ function keyPressed() {
   if (keyCode === 27 && gameState != 1) {
     gameState = gameState == 0 ? 2 : 0;
   }
-  if (debug) {
-    if (keyCode === 32) addFood();
-  }
+  // if (debug) {
+  //   if (keyCode === 32) addFood();
+  // }
   if (keyCode === 66) debug = !debug;
 }
 
