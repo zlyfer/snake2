@@ -4,7 +4,7 @@ var settings = {
   gameMode: {
     id: "gameMode",
     label: "Spielmodus",
-    value: "missions",
+    value: "collect",
     type: "select",
     options: [
       {
@@ -17,7 +17,6 @@ var settings = {
       },
     ],
   },
-
   wallHit: {
     id: "wallHit",
     label: "Wandmodus",
@@ -264,8 +263,8 @@ function gamePause() {
 function gameRun() {
   if (settings.gameMode.value == "collect") score = snake.body.length;
   let randomFood = {
-    chance: settings.gameMode.value == "missions" ? 0.002 : 0.001,
-    max: settings.gameMode.value == "missions" ? 16 : 8,
+    chance: settings.gameMode.value == "missions" ? 0.0018 : 0.001,
+    max: settings.gameMode.value == "missions" ? max(score, 12) : 8,
   };
   if (random() < randomFood.chance && foods.length < randomFood.max) addFood();
   snake.update();
@@ -277,7 +276,7 @@ function gameRun() {
       food.update();
       if (settings.magnet.value) snake.attractFood(food);
       if (snake.checkEat(food)) {
-        if (highscore < snake.body.length) highscore = snake.body.length;
+        if (highscore < score) highscore = snake.body.length;
         eaten.push(i);
       }
     } else {
@@ -344,7 +343,6 @@ function showSettings() {
       }
       rect(xb, yb, wb, hb);
       let _text = setting.value ? "An" : "Aus";
-      noStroke();
       fill(255);
       text(_text, xb + wb * 0.5, yb + hb * 0.7);
     } else if (setting.type == "select") {
@@ -355,6 +353,10 @@ function showSettings() {
       if (detectMouseHitbox(xb, yb, wb, hb)) {
         fill(255, 100);
         buttonHover = () => {
+          if (setting.id == "gameMode") {
+            score = 0;
+            highscore = 0;
+          }
           if (index < setting.options.length - 1) {
             setting.value = setting.options[index + 1].value;
           } else {
@@ -365,7 +367,9 @@ function showSettings() {
         fill(255, 50);
       }
       rect(xb, yb, wb, hb);
-      noStroke();
+      fill(255, 30);
+      let tw = wb / setting.options.length;
+      rect(xb + index * tw, yb, tw, hb);
       fill(255);
       text(option.label, xb + wb * 0.5, yb + hb * 0.7);
     }

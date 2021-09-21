@@ -23,11 +23,25 @@ class Snake {
     if (settings.eatBody.value) this.detectSelfBite();
     // this.detectDecayBodyBite();
     this.applySpeed();
+    if (debug) this.debug();
   }
 
   show() {
     this.drawBody();
     this.draw();
+  }
+
+  debug() {
+    push();
+    stroke(255);
+    strokeWeight(2);
+    noFill();
+    beginShape();
+    this.positions.forEach((p) => {
+      vertex(p.x, p.y);
+    });
+    endShape();
+    pop();
   }
 
   attractFood(food) {
