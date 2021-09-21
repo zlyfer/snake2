@@ -3,14 +3,18 @@
 class Food {
   constructor(x, y) {
     this.pos = createVector(x, y);
-    this.oSize = 50;
+    this.oSize = 40;
     this.size = this.oSize;
     this.type = random(pickupList);
   }
 
   update() {
     this.show();
-    this.pulsate();
+    if (settings.fruitType.value == "infinity") this.pulsate();
+  }
+
+  decay() {
+    this.size -= 0.03;
   }
 
   pulsate() {

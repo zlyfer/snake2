@@ -1,6 +1,22 @@
 // jshint esversion: 9
 
 var settings = {
+  gameMode: {
+    id: "gameMode",
+    label: "Spielmodus",
+    value: "missions",
+    type: "select",
+    options: [
+      {
+        label: "Missionen",
+        value: "missions",
+      },
+      {
+        label: "Sammeln",
+        value: "collect",
+      },
+    ],
+  },
   hardcore: {
     id: "hardcore",
     label: "Hardcore",
@@ -23,6 +39,22 @@ var settings = {
       },
     ],
   },
+  fruitType: {
+    id: "fruitType",
+    label: "Fruchtyp",
+    value: "infinity",
+    type: "select",
+    options: [
+      {
+        label: "Dauerhaft",
+        value: "infinity",
+      },
+      {
+        label: "Verschwinden",
+        value: "decay",
+      },
+    ],
+  },
   magnet: {
     id: "magnet",
     label: "Erzimodus (Magnet)",
@@ -41,7 +73,6 @@ var settings = {
     value: true,
     type: "boolean",
   },
-
   pulsateBody: {
     id: "pulsateBody",
     label: "Körper Pulsieren",
@@ -71,15 +102,27 @@ var settings = {
 };
 
 // 0 = running, 1 = start, 2 = pause
-var gameState = 1;
+var gameState = 1; // Default: 1
 // 0 = none, 1 = start/exit button
 // NONE = 0, START = 1, END = 2, RESUME = 3
 var buttonHover = 0;
 var snake;
 var foods = [];
-var pickupList = ["apple", "mango", "lime", "grapes"];
-var pickups = {};
 var highscore = 0;
+var score = 0;
+var mission = {
+  type: null,
+  amount: 0,
+};
+
+const pickupList = ["apple", "mango", "lime", "grapes"];
+const pickupNames = {
+  apple: "Apfel",
+  mango: "Mango",
+  lime: "Limette",
+  grapes: "Traube",
+};
+var pickups = {};
 var logoImage;
 
 var updates = {
@@ -88,7 +131,22 @@ var updates = {
 };
 let fpsList = [];
 let maxFPS = 0;
-var debug = false;
+
+const debugObjectList = ["snake"];
+const debugObjectListBlackList = ["snake.positions", "snake.body", "snake.bodyFade"];
+var debugList = [
+  "gameState",
+  "buttonHover",
+  "maxFPS",
+  "mouseX",
+  "mouseY",
+  "keyCode",
+  "mouseIsPressed",
+  "mouseButton",
+  "snake.body.length",
+];
+var debugObjects = [];
+var debug = false; // Default: false
 
 function preload() {
   logoImage = loadImage("./assets/logo.png");
@@ -104,6 +162,7 @@ function setup() {
     pickups[pickup].color = generateImageAverageColor(pickups[pickup].image);
   });
   initGame();
+  initDebug();
 }
 
 function windowResized() {
@@ -118,6 +177,22 @@ function initGame() {
   foods = [];
   snake = new Snake(width / 2, height / 2);
   addFood();
+  addFood();
+  newMission();
+}
+
+function initDebug() {
+  debugObjectList.forEach((d) => {
+    let keys = [];
+    Object.keys(eval(d)).forEach((key) => {
+      if (!debugObjectListBlackList.includes(d + "." + key)) keys.push(key);
+    });
+    debugObjects = debugObjects.concat(keys.map((e) => d + "." + e));
+  });
+  debugList = [...debugList, ...debugObjects];
+  Object.keys(settings).forEach((key) => {
+    debugList.push("settings." + key + ".value");
+  });
 }
 
 function draw() {
@@ -127,7 +202,6 @@ function draw() {
   if (gameState == 0) {
     buttonHover = 0;
     gameRun();
-    showUI();
   } else if (gameState == 1) {
     gameMenu();
   } else if (gameState == 2) {
@@ -178,22 +252,44 @@ function gamePause() {
 }
 
 function gameRun() {
-  if (random() < 0.001 && foods.length < 8) addFood();
+  if (settings.gameMode.value == "collect") score = snake.body.length;
+  let randomFood = {
+    chance: settings.gameMode.value == "missions" ? 0.002 : 0.001,
+    max: settings.gameMode.value == "missions" ? 16 : 8,
+  };
+  if (random() < randomFood.chance && foods.length < randomFood.max) addFood();
   snake.update();
+  let decayedFood = [];
   let eaten = [];
   foods.forEach((food, i) => {
-    food.update();
-    if (settings.magnet.value) snake.attractFood(food);
-    if (snake.checkEat(food)) {
-      if (highscore < snake.body.length) highscore = snake.body.length;
-      eaten.push(i);
+    if (settings.fruitType.value == "decay") food.decay();
+    if (food.size > 10) {
+      food.update();
+      if (settings.magnet.value) snake.attractFood(food);
+      if (snake.checkEat(food)) {
+        if (highscore < snake.body.length) highscore = snake.body.length;
+        eaten.push(i);
+      }
+    } else {
+      decayedFood.push(i);
     }
   });
-  eaten.forEach((e) => {
+  decayedFood.forEach((f) => {
+    foods.splice(f, 1);
     addFood();
-    foods.splice(e, 1);
   });
+  eaten.forEach((e) => {
+    foods.splice(e, 1);
+    addFood();
+  });
+  if (settings.gameMode.value == "missions") {
+    if (snake.checkMission(mission.type, mission.amount)) {
+      score++;
+      newMission();
+    }
+  }
   detectControls();
+  showUI();
 }
 
 function showOverlay() {
@@ -267,16 +363,18 @@ function showSettings() {
 }
 
 function showControls() {
-  addBox("Steuerung", width * 0.71, height * 0.45, width * 0.27, height * 0.2);
+  addBox("Steuerung", width * 0.71, height * 0.45, width * 0.27, height * 0.24);
   push();
   fill(255);
   textSize(width * 0.013);
   textAlign(LEFT);
   text("Pause", width * 0.724, height * 0.58);
   text("Lenken", width * 0.724, height * 0.615);
+  text("Debug Info", width * 0.724, height * 0.65);
   textAlign(RIGHT);
   text("Escape", width * 0.724 + width * 0.24, height * 0.58);
   text("Pfeiltasten / Maustasten", width * 0.724 + width * 0.24, height * 0.615);
+  text("B", width * 0.724 + width * 0.24, height * 0.65);
   pop();
 }
 
@@ -334,14 +432,13 @@ function mouseClicked() {
 }
 
 function keyPressed() {
-  console.log(keyCode);
   if (keyCode === 27 && gameState != 1) {
     gameState = gameState == 0 ? 2 : 0;
   }
   if (debug) {
     if (keyCode === 32) addFood();
   }
-  if (keyCode === 189) debug = !debug;
+  if (keyCode === 66) debug = !debug;
 }
 
 function detectControls() {
@@ -354,7 +451,15 @@ function detectMouseHitbox(x, y, w, h) {
 }
 
 function addFood() {
-  foods.push(new Food(random(25, width - 25), random(25, height - 25)));
+  let offset = 40;
+  foods.push(new Food(random(offset, width - offset), random(offset, height - offset)));
+}
+
+function newMission() {
+  mission = {
+    type: random(pickupList),
+    amount: round(random(1, round(score / 2) + 2)),
+  };
 }
 
 function showUI() {
@@ -363,22 +468,33 @@ function showUI() {
   fill(255);
   noStroke();
   textSize(width * 0.01);
-  text(`Highscore: ${highscore}`, width - width * 0.01, height * 0.04);
-  text(`Score: ${snake.body.length}`, width - width * 0.01, height * 0.07);
+  let gameModeLabel = settings.gameMode.options.find((o) => o.value == settings.gameMode.value).label;
+
+  text(`Spielmodus: ${gameModeLabel}`, width - width * 0.01, height * 0.04);
+  text(`Score: ${score}`, width - width * 0.01, height * 0.07);
+  text(`Highscore: ${highscore}`, width - width * 0.01, height * 0.1);
+  if (settings.gameMode.value == "missions") {
+    textAlign(CENTER);
+    textSize(height * 0.04);
+    text(`Mission: ${mission.amount}x ${pickupNames[mission.type]}`, width / 2, height * 0.1);
+  }
   pop();
 }
 
 function showDebug() {
-  let graphHeight = height * 0.22;
+  showOverlay();
+  let graphHeight = height * 0.16;
   fpsList.push(updates.fps);
   if (fpsList.length > 200) fpsList.shift();
   if (updates.fps > maxFPS) maxFPS = updates.fps;
   push();
   textSize(width * 0.008);
   fill(255);
-  text("FPS: " + updates.fps, width * 0.005, height * 0.03);
-  text("Body Parts: " + snake.body.length, width * 0.005, height * 0.05);
-  text("Positions: " + snake.positions.length, width * 0.005, height * 0.07);
+  text("fps: " + updates.fps, width * 0.005, height * 0.03);
+
+  debugList.forEach((d, i) => {
+    text(d + ": " + eval(d), width * 0.005, height * (0.03 + i * 0.02) + graphHeight);
+  });
   stroke(255);
   noFill();
   strokeWeight(2);

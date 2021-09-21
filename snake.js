@@ -5,10 +5,10 @@ class Snake {
     this.pos = createVector(x, y);
     this.dir = createVector(1, 0).rotate(radians(random() * 360));
     this.body = [];
-    this.deadBodies = [];
+    this.decayBodies = [];
     this.positions = [];
     this.offset = 1.2;
-    this.size = 35;
+    this.size = 30;
     this.bodyFade = { dir: 0, value: 0 };
     this.speedModifier = 1;
   }
@@ -16,12 +16,12 @@ class Snake {
   update() {
     this.changeDir();
     if (settings.pulsateBody.value) this.pulsateBody();
-    this.showDeadBodies();
+    this.showDecayBodies();
     this.show();
     this.move();
     this.moveBody();
     if (settings.eatBody.value) this.detectSelfBite();
-    // this.detectDeadBodyBite();
+    // this.detectDecayBodyBite();
     this.applySpeed();
   }
 
@@ -43,6 +43,25 @@ class Snake {
       this.addSegment(food.type);
       return true;
     } else return false;
+  }
+
+  checkMission(type, amount) {
+    let _type = null;
+    let _amount = 0;
+    let missionAchieved = false;
+    for (let i = 0; i < this.body.length; i++) {
+      let bodyPart = this.body[i];
+      _type = bodyPart.type;
+      if (bodyPart.type != type || bodyPart.type != _type) {
+        _amount = 0;
+      }
+      if (bodyPart.type == type) _amount++;
+      if (_amount == amount) {
+        this.killBody(i - _amount + 1, _amount, false);
+        missionAchieved = true;
+      }
+    }
+    return missionAchieved;
   }
 
   addSegment(type) {
@@ -127,7 +146,6 @@ class Snake {
 
     for (let i = 0; i < this.body.length; i++) {
       let bodyPart = this.body[i];
-      pop();
       push();
       noStroke();
       fill([...pickups[bodyPart.type].color, bodyPart.fade]);
@@ -203,17 +221,17 @@ class Snake {
     if (biten) this.killBody(biten);
   }
 
-  detectDeadBodyBite() {
-    for (let i = 0; i < this.deadBodies.length; i++) {
-      for (let j = 0; j < this.deadBodies[i].bodies.length; j++) {
-        let center = this.deadBodies[i].bodies[j].pos.copy();
-        if (j < this.deadBodies[i].bodies.length - 1)
+  detectDecayBodyBite() {
+    for (let i = 0; i < this.decayBodies.length; i++) {
+      for (let j = 0; j < this.decayBodies[i].bodies.length; j++) {
+        let center = this.decayBodies[i].bodies[j].pos.copy();
+        if (j < this.decayBodies[i].bodies.length - 1)
           center = createVector(
-            (this.deadBodies[i].bodies[j].pos.x + this.deadBodies[i].bodies[j + 1].pos.x) / 2,
-            (this.deadBodies[i].bodies[j].pos.y + this.deadBodies[i].bodies[j + 1].pos.y) / 2
+            (this.decayBodies[i].bodies[j].pos.x + this.decayBodies[i].bodies[j + 1].pos.x) / 2,
+            (this.decayBodies[i].bodies[j].pos.y + this.decayBodies[i].bodies[j + 1].pos.y) / 2
           );
         if (
-          dist(this.pos.x, this.pos.y, this.deadBodies[i].bodies[j].pos.x, this.deadBodies[i].bodies[j].pos.y) <= 8 ||
+          dist(this.pos.x, this.pos.y, this.decayBodies[i].bodies[j].pos.x, this.decayBodies[i].bodies[j].pos.y) <= 8 ||
           dist(this.pos.x, this.pos.y, center.x, center.y) <= 8
         ) {
           this.killBody(0);
@@ -223,32 +241,40 @@ class Snake {
     }
   }
 
-  killBody(index) {
-    this.deadBodies.push({
-      timer: 0,
-      bodies: this.body.splice(index),
-    });
+  killBody(index, length = this.body.length, dead = true) {
+    if (dead) {
+      this.decayBodies.push({
+        timer: 0,
+        bodies: this.body.splice(index, length),
+        decayType: "dead",
+      });
+    } else {
+      this.body.splice(index, length);
+      this.body.forEach((bodyPart, i) => {
+        bodyPart.order = i + 1;
+      });
+    }
   }
 
-  showDeadBodies() {
+  showDecayBodies() {
     push();
-    for (let i = 0; i < this.deadBodies.length; i++) {
-      let fade = map(this.deadBodies[i].timer, 0, 400, 200, 100);
+    for (let i = 0; i < this.decayBodies.length; i++) {
+      let fade = map(this.decayBodies[i].timer, 0, 400, 200, 100);
 
       if (settings.bodyLink.value != "never") {
         noFill();
         stroke(255, fade);
-        for (let j = 0; j < this.deadBodies[i].bodies.length - 1; j++) {
-          strokeWeight(this.getBodySize(this.deadBodies[i].bodies[j].stack) / 2);
+        for (let j = 0; j < this.decayBodies[i].bodies.length - 1; j++) {
+          strokeWeight(this.getBodySize(this.decayBodies[i].bodies[j].stack) / 2);
           if (
-            this.deadBodies[i].bodies[j].pos.dist(this.deadBodies[i].bodies[j + 1].pos) < this.size * 2 &&
+            this.decayBodies[i].bodies[j].pos.dist(this.decayBodies[i].bodies[j + 1].pos) < this.size * 2 &&
             (settings.bodyLink.value == "always" ||
               (settings.bodyLink.value == "same" &&
-                this.deadBodies[i].bodies[j].type == this.deadBodies[i].bodies[j + 1].type))
+                this.decayBodies[i].bodies[j].type == this.decayBodies[i].bodies[j + 1].type))
           ) {
             beginShape();
-            vertex(this.deadBodies[i].bodies[j].pos.x, this.deadBodies[i].bodies[j].pos.y);
-            vertex(this.deadBodies[i].bodies[j + 1].pos.x, this.deadBodies[i].bodies[j + 1].pos.y);
+            vertex(this.decayBodies[i].bodies[j].pos.x, this.decayBodies[i].bodies[j].pos.y);
+            vertex(this.decayBodies[i].bodies[j + 1].pos.x, this.decayBodies[i].bodies[j + 1].pos.y);
             endShape();
           }
         }
@@ -256,16 +282,16 @@ class Snake {
 
       noStroke();
       fill(fade);
-      for (let j = 0; j < this.deadBodies[i].bodies.length; j++) {
+      for (let j = 0; j < this.decayBodies[i].bodies.length; j++) {
         ellipse(
-          this.deadBodies[i].bodies[j].pos.x,
-          this.deadBodies[i].bodies[j].pos.y,
-          this.getBodySize(this.deadBodies[i].bodies[j].stack)
+          this.decayBodies[i].bodies[j].pos.x,
+          this.decayBodies[i].bodies[j].pos.y,
+          this.getBodySize(this.decayBodies[i].bodies[j].stack)
         );
       }
 
-      this.deadBodies[i].timer++;
-      if (this.deadBodies[i].timer > 400) this.deadBodies.splice(i, 1);
+      this.decayBodies[i].timer++;
+      if (this.decayBodies[i].timer > 400) this.decayBodies.splice(i, 1);
     }
     pop();
   }
