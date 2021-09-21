@@ -17,11 +17,26 @@ var settings = {
       },
     ],
   },
-  hardcore: {
-    id: "hardcore",
-    label: "Hardcore",
-    value: false,
-    type: "boolean",
+
+  wallHit: {
+    id: "wallHit",
+    label: "Wandmodus",
+    value: "bounce",
+    type: "select",
+    options: [
+      {
+        label: "Unendlich",
+        value: "infinity",
+      },
+      {
+        label: "Abprallen",
+        value: "bounce",
+      },
+      {
+        label: "Sterben",
+        value: "death",
+      },
+    ],
   },
   growMode: {
     id: "growMode",
@@ -67,12 +82,7 @@ var settings = {
     value: true,
     type: "boolean",
   },
-  wallHit: {
-    id: "wallHit",
-    label: "Wände",
-    value: true,
-    type: "boolean",
-  },
+
   pulsateBody: {
     id: "pulsateBody",
     label: "Körper Pulsieren",
@@ -321,7 +331,8 @@ function showSettings() {
     let yb = sy - h * 0.043;
     let hb = height * 0.045;
     if (setting.type == "boolean") {
-      let wb = (w - width * 0.001 * 2) * 0.11;
+      let wb = 200;
+      // let wb = (w - width * 0.001 * 2) * 0.11;
       let xb = x * 0.6 + w - wb;
       if (detectMouseHitbox(xb, yb, wb, hb)) {
         fill((setting.value ? "#4caf50" : "#f44336") + "ee");
@@ -339,7 +350,8 @@ function showSettings() {
     } else if (setting.type == "select") {
       let option = setting.options.find((o) => o.value == setting.value);
       let index = setting.options.indexOf(option);
-      let wb = textWidth(setting.options[index].label) * 1.2;
+      let wb = 200;
+      // let wb = textWidth(setting.options[index].label) * 1.2;
       let xb = x * 0.6 + w - wb;
       if (detectMouseHitbox(xb, yb, wb, hb)) {
         fill(255, 100);

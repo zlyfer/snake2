@@ -169,10 +169,9 @@ class Snake {
   }
 
   move() {
-    if (settings.hardcore.value)
+    if (settings.wallHit.value == "death") {
       if (this.pos.x < 0 || this.pos.x > width || this.pos.y < 0 || this.pos.y > height) gameState = 1;
-
-    if (settings.wallHit.value) {
+    } else if (settings.wallHit.value == "bounce") {
       if (this.pos.x < 0 || this.pos.x > width) {
         this.pos.x = this.pos.x > width ? width : 0;
         this.dir.x = -this.dir.x;
@@ -183,7 +182,7 @@ class Snake {
         this.dir.y = -this.dir.y;
         this.killBody(0);
       }
-    } else {
+    } else if (settings.wallHit.value == "infinity") {
       if (this.pos.x < 0) {
         this.pos.x = width;
       }
