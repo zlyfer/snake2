@@ -487,6 +487,8 @@ function showUI() {
   if (settings.gameMode.value == "missions") {
     textAlign(CENTER);
     textSize(height * 0.04);
+    strokeWeight(width * 0.001);
+    stroke(0);
     text(`Mission: ${mission.amount}x ${pickupNames[mission.type]}`, width / 2, height * 0.1);
   }
   pop();
