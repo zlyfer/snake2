@@ -169,7 +169,7 @@ class Snake {
   }
 
   move() {
-    if (settings.hardcore.value && !settings.wallHit.value)
+    if (settings.hardcore.value)
       if (this.pos.x < 0 || this.pos.x > width || this.pos.y < 0 || this.pos.y > height) gameState = 1;
 
     if (settings.wallHit.value) {
