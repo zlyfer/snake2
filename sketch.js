@@ -236,7 +236,7 @@ function gameMenu() {
   textAlign(CENTER);
   fill(255);
   textSize(height * 0.07);
-  text("Snake", width * 0.54, height * 0.135);
+  text("Snake", width * 0.46 + height * 0.15, height * 0.135);
   textSize(height * 0.04);
   text("von Frederik Shull", width / 2, height * 0.23);
   image(logoImage, width * 0.405, height * 0.04, height * 0.15, height * 0.15);
@@ -314,10 +314,10 @@ function showSettings() {
   let y = height * 0.25;
   let w = width * 0.27;
   let h = height * 0.6;
-  addBox("Einstellungen", x, y, w, h);
+  addBox("Einstellungen", x, y, w, h * 0.85);
   push();
   noStroke();
-  textSize(h * 0.04);
+  textSize((w / 2 + h / 2) * 0.04);
   Object.keys(settings).forEach((id, index) => {
     let setting = settings[id];
     let sy = index * (h * 0.08) + y + height * 0.15;
@@ -330,8 +330,8 @@ function showSettings() {
     textAlign(CENTER);
     let yb = sy - h * 0.043;
     let hb = height * 0.045;
+    let wb = w * 0.35;
     if (setting.type == "boolean") {
-      let wb = 200;
       // let wb = (w - width * 0.001 * 2) * 0.11;
       let xb = x * 0.6 + w - wb;
       if (detectMouseHitbox(xb, yb, wb, hb)) {
@@ -350,7 +350,6 @@ function showSettings() {
     } else if (setting.type == "select") {
       let option = setting.options.find((o) => o.value == setting.value);
       let index = setting.options.indexOf(option);
-      let wb = 200;
       // let wb = textWidth(setting.options[index].label) * 1.2;
       let xb = x * 0.6 + w - wb;
       if (detectMouseHitbox(xb, yb, wb, hb)) {
@@ -495,9 +494,10 @@ function showUI() {
 
 function showDebug() {
   showOverlay();
+  let graphLength = 500;
   let graphHeight = height * 0.16;
   fpsList.push(updates.fps);
-  if (fpsList.length > 200) fpsList.shift();
+  if (fpsList.length > graphLength) fpsList.shift();
   if (updates.fps > maxFPS) maxFPS = updates.fps;
   push();
   textSize(width * 0.008);
@@ -510,9 +510,9 @@ function showDebug() {
   stroke(255);
   noFill();
   strokeWeight(2);
-  line(0, graphHeight, 200, graphHeight);
+  line(0, graphHeight, graphLength, graphHeight);
   strokeWeight(1);
-  line(0, graphHeight - maxFPS / 2, 200, graphHeight - maxFPS / 2);
+  line(0, graphHeight - maxFPS / 2, graphLength, graphHeight - maxFPS / 2);
   beginShape();
   fpsList.forEach((fps, i) => {
     vertex(i, graphHeight - fps / 2);
