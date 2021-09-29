@@ -1,6 +1,8 @@
+/* Change cursor to custom sprite: */
 canvas {
   cursor: url(./assets/cursor.png), auto;
 }
+/* Make canvas stretch to whole body without border: */
 body {
   margin: 0;
   padding: 0;

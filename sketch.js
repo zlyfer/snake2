@@ -1,5 +1,6 @@
 // jshint esversion: 9
 
+// Settings object, used to auto generate UI:
 var settings = {
   gameMode: {
     id: "gameMode",
@@ -115,34 +116,49 @@ var gameState = 1; // Default: 1
 // 0 = none, 1 = start/exit button
 // NONE = 0, START = 1, END = 2, RESUME = 3
 var buttonHover = 0;
+// Snake class:
 var snake;
+// Fruits array:
 var foods = [];
+// Highscore (which gets reset upon change of game mode):
 var highscore = 0;
+// Current score:
 var score = 0;
+// Current mission (type of fruit and how many):
 var mission = {
   type: null,
   amount: 0,
 };
 
+// All current fruit types:
 const pickupList = ["apple", "mango", "lime", "grapes"];
+// Translation for mission game mode:
 const pickupNames = {
   apple: "Apfel",
   mango: "Mango",
   lime: "Limette",
   grapes: "Traube",
 };
+// Pickup object filled with images on preload:
 var pickups = {};
+// Logo to draw in main menu:
 var logoImage;
 
+// Update flags for things to not update every frame:
 var updates = {
   updateFlag: 0,
   fps: 0,
 };
+// Limited list of past fps values for debug graph:
 let fpsList = [];
+// Highest fps count for bar in debug graph:
 let maxFPS = 0;
 
+// Objects to include in debug screen:
 const debugObjectList = ["snake"];
+// Subobjects to not include in debug screen:
 const debugObjectListBlackList = ["snake.positions", "snake.body", "snake.bodyFade"];
+// Single variables to include in debug screen:
 var debugList = [
   "gameState",
   "buttonHover",
@@ -154,11 +170,15 @@ var debugList = [
   "mouseButton",
   "snake.body.length",
 ];
+// Auto generated array of variables to show in debug screen:
 var debugObjects = [];
-var debug = false; // Default: false
+// Flag to shwo debug screen:
+var debug = false;
 
 function preload() {
+  // Load logo image:
   logoImage = loadImage("./assets/logo.png");
+  // Load images of all fruit types:
   pickupList.forEach((pickup) => {
     pickups[pickup] = {};
     pickups[pickup].image = loadImage(`./assets/pickups/${pickup}.png`);
@@ -166,56 +186,73 @@ function preload() {
 }
 
 function setup() {
+  // Create canvas based on window size:
   createCanvas(windowWidth, windowHeight);
+  // Set body part color based on fruit sprite:
   pickupList.forEach((pickup) => {
     pickups[pickup].color = generateImageAverageColor(pickups[pickup].image);
   });
+  // Initialize game:
   initGame();
+  // Initialize debugObjects array:
   initDebug();
 }
 
+// Resize canvas when the window gets resized:
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
 
-function centerOfTwoVectors(v1, v2) {
-  return createVector((v1.x + v2.x) / 2, (v1.y + v2.y) / 2);
-}
-
 function initGame() {
+  // Clear and init food aray:
   foods = [];
+  // Place a new snake head in the center of the screen:
   snake = new Snake(width / 2, height / 2);
+  // Place two fruits:
   addFood();
   addFood();
+  // Determine a new mission (regardless of game mode):
   newMission();
 }
 
 function initDebug() {
+  // Add name of variable and value of variable to debugObjects:
   debugObjectList.forEach((d) => {
     let keys = [];
+    // jshint ignore:start
     Object.keys(eval(d)).forEach((key) => {
       if (!debugObjectListBlackList.includes(d + "." + key)) keys.push(key);
     });
+    // jshint ignore:end
     debugObjects = debugObjects.concat(keys.map((e) => d + "." + e));
   });
+  // Add debugObjects to debugList:
   debugList = [...debugList, ...debugObjects];
+  // Add all settings values:
   Object.keys(settings).forEach((key) => {
     debugList.push("settings." + key + ".value");
   });
 }
 
 function draw() {
+  // Set framerate to 120 (default is 60):
   frameRate(120);
+  // Add background:
   background(22);
+  // Update things which should not be updated every frame:
   updateUpdates();
   if (gameState == 0) {
+    // Game is running:
     buttonHover = 0;
     gameRun();
   } else if (gameState == 1) {
+    // Main menu:
     gameMenu();
   } else if (gameState == 2) {
+    // Pause screen:
     gamePause();
   }
+  // Show debug screen if enabled:
   if (debug) showDebug();
 }
 
@@ -226,6 +263,7 @@ function updateUpdates() {
   }
 }
 
+// Show main menu UI:
 function gameMenu() {
   showOverlay();
   showSettings();
@@ -242,6 +280,7 @@ function gameMenu() {
   pop();
 }
 
+// Show pause screen ui:
 function gamePause() {
   snake.show();
   for (let i = 0; i < foods.length; i++) {
@@ -260,44 +299,62 @@ function gamePause() {
   pop();
 }
 
+// Run game and update everything:
 function gameRun() {
+  // Update score:
   if (settings.gameMode.value == "collect") score = snake.body.length;
+  // Chance to spawn a new fruit object:
   let randomFood = {
     chance: settings.gameMode.value == "missions" ? 0.0018 : 0.001,
     max: settings.gameMode.value == "missions" ? max(score, 12) : 8,
   };
+  // Spawn a new fruit object based on random result:
   if (random() < randomFood.chance && foods.length < randomFood.max) addFood();
+  // Update snake:
   snake.update();
+  // Create array for decayed food to be removed:
   let decayedFood = [];
+  // Create array for eaten food to be removed:
   let eaten = [];
   foods.forEach((food, i) => {
+    // Decay food:
     if (settings.fruitType.value == "decay") food.decay();
     if (food.size > 10) {
       food.update();
+      // Attract food object to snake:
       if (settings.magnet.value) snake.attractFood(food);
+      // Check if hitboxes collide:
       if (snake.checkEat(food)) {
+        // If score is higher highscore, save it:
         if (highscore < score) highscore = snake.body.length;
+        // Add food to eaten array:
         eaten.push(i);
       }
     } else {
+      // Add food object to decayedFood array:
       decayedFood.push(i);
     }
   });
+  // For every removed object spawn a new one:
   decayedFood.forEach((f) => {
     foods.splice(f, 1);
     addFood();
   });
+  // For every removed object spawn a new one:
   eaten.forEach((e) => {
     foods.splice(e, 1);
     addFood();
   });
+  // Determine new mission if current mission is finished:
   if (settings.gameMode.value == "missions") {
     if (snake.checkMission(mission.type, mission.amount)) {
       score++;
       newMission();
     }
   }
+  // Listen to input to change direction:
   detectControls();
+  // Show ingame UI:
   showUI();
 }
 
@@ -308,6 +365,9 @@ function showOverlay() {
   pop();
 }
 
+// Generate settings window based on settings object:
+// x,y = positions, w,h = dimensions
+// xb,yb = positions of buttons, wb,hb = dimensions of buttons
 function showSettings() {
   let x = width * 0.015;
   let y = height * 0.25;
@@ -377,6 +437,7 @@ function showSettings() {
   pop();
 }
 
+// Show keybindings:
 function showControls() {
   addBox("Steuerung", width * 0.71, height * 0.45, width * 0.27, height * 0.24);
   push();
@@ -393,6 +454,7 @@ function showControls() {
   pop();
 }
 
+// Generic box generator:
 function addBox(title, x, y, w, h) {
   push();
   stroke(255, 150);
@@ -407,6 +469,7 @@ function addBox(title, x, y, w, h) {
   pop();
 }
 
+// Generic button generator with custom click function (buttonHover):
 function addButton(_text, x, y, _buttonHover) {
   let h = height * 0.1;
   textSize(h * 0.35);
@@ -431,6 +494,8 @@ function addButton(_text, x, y, _buttonHover) {
   pop();
 }
 
+// Check if mouse button is clicked and either change game state on predefined
+// buttonHover values or directly call custom buttonHover function:
 function mouseClicked() {
   if (typeof buttonHover === "number") {
     if (buttonHover == 1) {
@@ -446,6 +511,7 @@ function mouseClicked() {
   }
 }
 
+// Other keybindings:
 function keyPressed() {
   if (keyCode === 27 && gameState != 1) {
     gameState = gameState == 0 ? 2 : 0;
@@ -456,20 +522,24 @@ function keyPressed() {
   if (keyCode === 66) debug = !debug;
 }
 
+// Control snake head:
 function detectControls() {
   if (keyIsDown(LEFT_ARROW) || (mouseIsPressed && mouseButton === LEFT)) snake.changeDir("left");
   if (keyIsDown(RIGHT_ARROW) || (mouseIsPressed && mouseButton === RIGHT)) snake.changeDir("right");
 }
 
+// Check if mouse is within hitbox:
 function detectMouseHitbox(x, y, w, h) {
   return mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
 }
 
+// Add a new random food object:
 function addFood() {
   let offset = 40;
   foods.push(new Food(random(offset, width - offset), random(offset, height - offset)));
 }
 
+// Determine a new mission based on current score (to increase difficulty):
 function newMission() {
   mission = {
     type: random(pickupList),
@@ -477,6 +547,7 @@ function newMission() {
   };
 }
 
+// Show game mode, score, highscore and current mission:
 function showUI() {
   push();
   textAlign(RIGHT);
@@ -498,6 +569,7 @@ function showUI() {
   pop();
 }
 
+// Show debug screen (fps graph and various variables and their value):
 function showDebug() {
   showOverlay();
   let graphLength = 500;
@@ -510,9 +582,11 @@ function showDebug() {
   fill(255);
   text("fps: " + updates.fps, width * 0.005, height * 0.03);
 
+  // jshint ignore:start
   debugList.forEach((d, i) => {
     text(d + ": " + eval(d), width * 0.005, height * (0.03 + i * 0.02) + graphHeight);
   });
+  // jshint ignore:end
   stroke(255);
   noFill();
   strokeWeight(2);
@@ -527,6 +601,7 @@ function showDebug() {
   pop();
 }
 
+// Select center pixel of food image and use it as the color of a body part:
 function generateImageAverageColor(image) {
   let halfWidth = round(image.width / 2);
   let halfHeight = round(image.height / 2);
