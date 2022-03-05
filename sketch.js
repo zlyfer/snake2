@@ -402,7 +402,7 @@ function showSettings() {
         fill((setting.value ? "#4caf50" : "#f44336") + "aa");
       }
       rect(xb, yb, wb, hb);
-      let _text = setting.value ? "An" : "Aus";
+      let _text = setting.value ? "On" : "Off";
       fill(255);
       text(_text, xb + wb * 0.5, yb + hb * 0.7);
     } else if (setting.type == "select") {
