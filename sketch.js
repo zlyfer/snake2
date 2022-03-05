@@ -4,107 +4,107 @@
 var settings = {
   gameMode: {
     id: "gameMode",
-    label: "Spielmodus",
+    label: "Gamemode",
     value: "collect",
     type: "select",
     options: [
       {
-        label: "Missionen",
+        label: "Missions",
         value: "missions",
       },
       {
-        label: "Sammeln",
+        label: "Collect",
         value: "collect",
       },
     ],
   },
   wallHit: {
     id: "wallHit",
-    label: "Wandmodus",
+    label: "Wallmode",
     value: "bounce",
     type: "select",
     options: [
       {
-        label: "Unendlich",
+        label: "Infinite",
         value: "infinity",
       },
       {
-        label: "Abprallen",
+        label: "Die & Bounce",
         value: "bounce",
       },
       {
-        label: "Sterben",
+        label: "Die",
         value: "death",
       },
     ],
   },
   growMode: {
     id: "growMode",
-    label: "Wachstumsmodus",
+    label: "Growmode",
     value: "attach",
     type: "select",
     options: [
       {
-        label: "Anhängen",
+        label: "Attach",
         value: "attach",
       },
       {
-        label: "Sammeln",
+        label: "Stack",
         value: "stack",
       },
     ],
   },
   fruitType: {
     id: "fruitType",
-    label: "Fruchtyp",
+    label: "Fruit Duration",
     value: "infinity",
     type: "select",
     options: [
       {
-        label: "Dauerhaft",
+        label: "Infinite",
         value: "infinity",
       },
       {
-        label: "Verschwinden",
+        label: "Decay",
         value: "decay",
       },
     ],
   },
   magnet: {
     id: "magnet",
-    label: "Erzimodus (Magnet)",
+    label: "Magnetmode",
     value: false,
     type: "boolean",
   },
   eatBody: {
     id: "eatBody",
-    label: "Körper Abbeißen",
+    label: "Self-Eating",
     value: true,
     type: "boolean",
   },
 
   pulsateBody: {
     id: "pulsateBody",
-    label: "Körper Pulsieren",
+    label: "Pulsate Body",
     value: false,
     type: "boolean",
   },
   bodyLink: {
     id: "bodyLink",
-    label: "Körperverbindungen",
+    label: "Body Connections",
     value: "same",
     type: "select",
     options: [
       {
-        label: "Immer",
+        label: "All",
         value: "always",
       },
       {
-        label: "Gleiche Farbe",
+        label: "Same Color",
         value: "same",
       },
       {
-        label: "Niemals",
+        label: "None",
         value: "never",
       },
     ],
@@ -134,10 +134,10 @@ var mission = {
 const pickupList = ["apple", "mango", "lime", "grapes"];
 // Translation for mission game mode:
 const pickupNames = {
-  apple: "Apfel",
+  apple: "Apple",
   mango: "Mango",
-  lime: "Limette",
-  grapes: "Traube",
+  lime: "Lime",
+  grapes: "Grapes",
 };
 // Pickup object filled with images on preload:
 var pickups = {};
@@ -267,7 +267,7 @@ function updateUpdates() {
 function gameMenu() {
   showOverlay();
   showSettings();
-  addButton("Spiel Starten", width / 2, height * 0.48, 1);
+  addButton("Start Game", width / 2, height * 0.48, 1);
   showControls();
   push();
   textAlign(CENTER);
@@ -275,7 +275,7 @@ function gameMenu() {
   textSize(height * 0.07);
   text("Snake", width * 0.46 + height * 0.15, height * 0.135);
   textSize(height * 0.04);
-  text("von Frederik Shull", width / 2, height * 0.23);
+  text("by Frederik Shull", width / 2, height * 0.23);
   image(logoImage, width * 0.405, height * 0.04, height * 0.15, height * 0.15);
   pop();
 }
@@ -287,8 +287,8 @@ function gamePause() {
     foods[i].show();
   }
   showOverlay();
-  addButton("Spiel Fortsetzen", width / 2, height * 0.42, 3);
-  addButton("Spiel Beenden", width / 2, height * 0.55, 2);
+  addButton("Continue", width / 2, height * 0.42, 3);
+  addButton("New Game", width / 2, height * 0.55, 2);
   showControls();
   push();
   stroke(255);
@@ -373,7 +373,7 @@ function showSettings() {
   let y = height * 0.25;
   let w = width * 0.27;
   let h = height * 0.6;
-  addBox("Einstellungen", x, y, w, h * 0.85);
+  addBox("Settings", x, y, w, h * 0.85);
   push();
   noStroke();
   textSize((w / 2 + h / 2) * 0.04);
@@ -439,17 +439,17 @@ function showSettings() {
 
 // Show keybindings:
 function showControls() {
-  addBox("Steuerung", width * 0.71, height * 0.45, width * 0.27, height * 0.24);
+  addBox("Controls", width * 0.71, height * 0.45, width * 0.27, height * 0.24);
   push();
   fill(255);
   textSize(width * 0.013);
   textAlign(LEFT);
   text("Pause", width * 0.724, height * 0.58);
-  text("Lenken", width * 0.724, height * 0.615);
+  text("Movement", width * 0.724, height * 0.615);
   text("Debug Info", width * 0.724, height * 0.65);
   textAlign(RIGHT);
   text("Escape", width * 0.724 + width * 0.24, height * 0.58);
-  text("Pfeiltasten / Maustasten", width * 0.724 + width * 0.24, height * 0.615);
+  text("Arrow Keys / Mouse Buttons", width * 0.724 + width * 0.24, height * 0.615);
   text("B", width * 0.724 + width * 0.24, height * 0.65);
   pop();
 }
@@ -556,7 +556,7 @@ function showUI() {
   textSize(width * 0.01);
   let gameModeLabel = settings.gameMode.options.find((o) => o.value == settings.gameMode.value).label;
 
-  text(`Spielmodus: ${gameModeLabel}`, width - width * 0.01, height * 0.04);
+  text(`Gamemode: ${gameModeLabel}`, width - width * 0.01, height * 0.04);
   text(`Score: ${score}`, width - width * 0.01, height * 0.07);
   text(`Highscore: ${highscore}`, width - width * 0.01, height * 0.1);
   if (settings.gameMode.value == "missions") {
